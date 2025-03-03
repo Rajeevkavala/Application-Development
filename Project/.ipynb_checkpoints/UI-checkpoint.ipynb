@@ -1,0 +1,132 @@
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "id": "6dfed319-21c3-442f-8708-c79111522fff",
+   "metadata": {},
+   "outputs": [
+    {
+     "ename": "ModuleNotFoundError",
+     "evalue": "No module named 'streamlit'",
+     "output_type": "error",
+     "traceback": [
+      "\u001b[1;31m---------------------------------------------------------------------------\u001b[0m",
+      "\u001b[1;31mModuleNotFoundError\u001b[0m                       Traceback (most recent call last)",
+      "Cell \u001b[1;32mIn[1], line 1\u001b[0m\n\u001b[1;32m----> 1\u001b[0m \u001b[38;5;28;01mimport\u001b[39;00m\u001b[38;5;250m \u001b[39m\u001b[38;5;21;01mstreamlit\u001b[39;00m\u001b[38;5;250m \u001b[39m\u001b[38;5;28;01mas\u001b[39;00m\u001b[38;5;250m \u001b[39m\u001b[38;5;21;01mst\u001b[39;00m\n\u001b[0;32m      2\u001b[0m \u001b[38;5;28;01mimport\u001b[39;00m\u001b[38;5;250m \u001b[39m\u001b[38;5;21;01mpandas\u001b[39;00m\u001b[38;5;250m \u001b[39m\u001b[38;5;28;01mas\u001b[39;00m\u001b[38;5;250m \u001b[39m\u001b[38;5;21;01mpd\u001b[39;00m\n\u001b[0;32m      3\u001b[0m \u001b[38;5;28;01mimport\u001b[39;00m\u001b[38;5;250m \u001b[39m\u001b[38;5;21;01mnumpy\u001b[39;00m\u001b[38;5;250m \u001b[39m\u001b[38;5;28;01mas\u001b[39;00m\u001b[38;5;250m \u001b[39m\u001b[38;5;21;01mnp\u001b[39;00m\n",
+      "\u001b[1;31mModuleNotFoundError\u001b[0m: No module named 'streamlit'"
+     ]
+    }
+   ],
+   "source": [
+    "import streamlit as st\n",
+    "import pandas as pd\n",
+    "import numpy as np\n",
+    "from sklearn.preprocessing import StsandardScaler\n",
+    "from sklearn.neighbors import NearestNeighbors\n",
+    "\n",
+    "# Load and preprocess the dataset\n",
+    "@st.cache_data  # Cache the data to avoid reloading on every interaction\n",
+    "def load_data():\n",
+    "    df = pd.read_csv(r\"C:\\Users\\rajee\\Downloads\\archive\\data\\data.csv\")  # Update path as needed\n",
+    "    \n",
+    "    # Define numeric features for scaling\n",
+    "    numeric_features = ['valence', 'year', 'acousticness', 'danceability', 'duration_ms', \n",
+    "                        'energy', 'instrumentalness', 'key', 'liveness', 'loudness', \n",
+    "                        'mode', 'popularity', 'speechiness', 'tempo']\n",
+    "    \n",
+    "    # Standardize numeric features\n",
+    "    scaler = StandardScaler()\n",
+    "    df_scaled = pd.DataFrame(scaler.fit_transform(df[numeric_features]), columns=numeric_features)\n",
+    "    \n",
+    "    # Fit NearestNeighbors model\n",
+    "    neigh = NearestNeighbors(n_neighbors=6, metric='cosine')  # 6 includes the input song\n",
+    "    neigh.fit(df_scaled)\n",
+    "    \n",
+    "    return df, df_scaled, neigh\n",
+    "\n",
+    "# Function to get song recommendations\n",
+    "def get_recommendations(song_name, df, df_scaled, neigh, num_recommendations=5):\n",
+    "    song_idx = df[df[\"name\"] == song_name].index\n",
+    "    \n",
+    "    if len(song_idx) == 0:\n",
+    "        return None\n",
+    "    \n",
+    "    song_idx = song_idx[0]\n",
+    "    song_features = df_scaled.iloc[song_idx].values.reshape(1, -1)\n",
+    "    \n",
+    "    # Find nearest neighbors\n",
+    "    distances, indices = neigh.kneighbors(song_features)\n",
+    "    \n",
+    "    # Get recommended songs (excluding the input song)\n",
+    "    recommended_indices = indices[0][1:num_recommendations+1]\n",
+    "    recommendations = df.iloc[recommended_indices][[\"name\", \"artists\", \"year\"]]\n",
+    "    recommendations[\"similarity\"] = 1 - distances[0][1:num_recommendations+1]\n",
+    "    \n",
+    "    return recommendations\n",
+    "\n",
+    "# Streamlit UI\n",
+    "def main():\n",
+    "    # Load data and model\n",
+    "    df, df_scaled, neigh = load_data()\n",
+    "    \n",
+    "    # Set page title and header\n",
+    "    st.title(\"Song Recommendation System\")\n",
+    "    st.markdown(\"Enter a song name to get similar song recommendations based on Spotify features.\")\n",
+    "    \n",
+    "    # User input\n",
+    "    song_name = st.text_input(\"Enter Song Name\", \"\").strip()\n",
+    "    \n",
+    "    # Button to get recommendations\n",
+    "    if st.button(\"Get Recommendations\"):\n",
+    "        if song_name:\n",
+    "            recommendations = get_recommendations(song_name, df, df_scaled, neigh)\n",
+    "            \n",
+    "            if recommendations is not None:\n",
+    "                st.subheader(f\"Recommendations for '{song_name}':\")\n",
+    "                st.dataframe(recommendations.style.format({\"similarity\": \"{:.4f}\"}))\n",
+    "            else:\n",
+    "                st.error(f\"Song '{song_name}' not found in the dataset.\")\n",
+    "        else:\n",
+    "            st.warning(\"Please enter a song name.\")\n",
+    "    \n",
+    "    # Exit option\n",
+    "    if st.button(\"Exit\"):\n",
+    "        st.write(\"Thank you for using the Song Recommendation System!\")\n",
+    "        st.stop()\n",
+    "\n",
+    "if __name__ == \"__main__\":\n",
+    "    main()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "c6c18b9c-c739-48f4-9460-014d4c648234",
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3 (ipykernel)",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.13.1"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
