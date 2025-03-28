@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Song Recommender</title>
+    <link rel="stylesheet" href="../static/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <h2>Song Recommendation System</h2>
+        <form method="POST" id="searchForm">
+            <div class="search-box">
+                <input type="text" name="song_name" placeholder="Enter song name" required>
+                <button type="submit">
+                    <i class="fas fa-search"></i> Get Recommendations
+                </button>
+            </div>
+        </form>
+        
+        <div id="loading" class="loading-spinner hidden">
+            <i class="fas fa-spinner fa-spin"></i> Finding recommendations...
+        </div>
+
+        {% if error %}
+            <p class="error">{{ error }}</p>
+        {% endif %}
+
+        <div class="featured-songs">
+            <h3>Featured Relaxation & Devotional Songs</h3>
+            {% if featured_songs %}
+                <div class="featured-grid">
+                    {% for song in featured_songs %}
+                    <div class="featured-card">
+                        <h4>{{ song.name }}</h4>
+                        <p>{{ song.artists }}</p>
+                        <button onclick="searchSong('{{ song.name }}')" class="featured-btn">
+                            Get Similar Songs
+                        </button>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p>No featured songs available at the moment.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('searchForm').onsubmit = function() {
+            document.getElementById('loading').classList.remove('hidden');
+        };
+
+        function searchSong(songName) {
+            document.querySelector('input[name="song_name"]').value = songName;
+            document.getElementById('searchForm').submit();
+        }
+    </script>
+</body>
+</html>

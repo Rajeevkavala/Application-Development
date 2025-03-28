@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recommendations</title>
+    <link rel="stylesheet" href="../static/styles.css">
+</head>
+<body>
+    <div class="container">
+        <h2>Recommended Songs for "{{ song_name }}"</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Song Name</th>
+                    <th>Artist</th>
+                    <th>Year</th>
+                    <th>Similarity</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for song in recommendations %}
+                <tr>
+                    <td>{{ song['name'] }}</td>
+                    <td>{{ song['artists'] }}</td>
+                    <td>{{ song['year'] }}</td>
+                    <td>{{ "%.4f"|format(song['similarity']*100) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <a href="/">Search Another Song</a>
+    </div>
+</body>
+</html>
